@@ -2,6 +2,8 @@
 
 This project is used to explore concepts related with classical molecular dynamics.
 
+This simulation make use of periodic boundary conditions and the minimum image convention.
+
 By running `python main.py` a molecular dynamic simulation will run with default values:
 
 - `dt = 0.004`,
