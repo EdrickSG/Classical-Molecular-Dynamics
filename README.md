@@ -10,10 +10,12 @@ By running `python main.py` a molecular dynamic simulation will run with default
 - `lattice_structure = "FCC"`,
 - `side_copies = 2`.
 
-The parameter `side_copies` are the number of copies per side of the unitary cell. For example,
+The parameter `side_copies` is the number of copies per side of the unitary cell. For example,
 with `side_copies = 2` our system will have 8 copies of the unitary cell.
 
-After finishing the simulation will save in the Results folder the positions, velocities, kinetic and potential energy in numpy files and a xyz file for visualizing in VMD.
+All these parameter can be changed in main.py.
+
+After finishing the simulation, the code will save in the Results folder the positions, velocities, kinetic and potential energy in numpy files and a xyz file for visualizing in VMD.
 
 The current libraries used are:
 - numpy
