@@ -122,7 +122,7 @@ class MDSimulation:
         return 0.5*np.sum(velocity_squared)
     
     def xyz_output(self):
-        file = open("test.xyz", "w")
+        file = open("Results/test.xyz", "w")
         file.write("\n")
         file.write(f"{len(self.positions[0])}\n")
         file.write(f"\n")
