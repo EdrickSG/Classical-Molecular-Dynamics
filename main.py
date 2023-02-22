@@ -7,8 +7,8 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
                     level=logging.INFO) #INFO/DEBUGGING/etc.
 
 #Initializing Simulation
-sim=MDSimulation(steps = 1000, dt = 0.004, box_len = 10)
-sim.position_init(lattice_structure = "FCC", side_copies = 2)
+sim=MDSimulation(steps = 5000, dt = 0.004, box_len = 10)
+sim.position_init(lattice_structure = "BCC", side_copies = 2)
 sim.velocity_init()
 
 #Main Loop

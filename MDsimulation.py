@@ -88,7 +88,7 @@ class MDSimulation:
     def velocity_verlet_step(self, step):
         force = self.compute_forces(step)
         self.second_potential[step+1] = self.compute_pe(step)
-        self.positions[step+1] = self.positions[step] + self.velocities[step]*self.dt +0.5*force*(self.dt)**2
+        self.positions[step+1] = self.positions[step] + self.velocities[step]*self.dt +0.5*force*(self.dt**2)
         #Boundary conditions
         for k in range(self.num_particles):
             for i in range(self.dim):
@@ -97,7 +97,7 @@ class MDSimulation:
                 if self.positions[step+1][k][i]<0:
                     self.positions[step+1][k][i] = self.positions[step+1][k][i] + self.box_len
         force_next = self.compute_forces(step+1)
-        self.velocities[step+1] = self.velocities[step] + 0.5*(force+force_next)*(self.dt**2)
+        self.velocities[step+1] = self.velocities[step] + 0.5*(force+force_next)*(self.dt)
 
     def pe_pair(self, p1, p2, step):
         r = self.positions[step][p1] - self.positions[step][p2]
@@ -109,6 +109,10 @@ class MDSimulation:
                 r[i]=r[i] + self.box_len
         r_mag = np.linalg.norm(r)
         return 4*((1/r_mag)**12- (1/r_mag)**6)
+<<<<<<< HEAD
+=======
+
+>>>>>>> b92cff1 (Solve issue of energy conservation)
     
     def compute_pe(self, step):
         total_pe=0
