@@ -7,9 +7,9 @@ This simulation make use of periodic boundary conditions and the minimum image c
 By running `python main.py` a molecular dynamic simulation will run with default values:
 
 - `dt = 0.004`,
-- `steps = 1000`,
+- `steps = 5000`,
 - `box_len = 10`,
-- `lattice_structure = "FCC"`,
+- `lattice_structure = "BCC"`,
 - `side_copies = 2`.
 
 The parameter `side_copies` is the number of copies per side of the unitary cell. For example,
@@ -28,7 +28,6 @@ The current libraries used are:
 
 ToDo:
 
-- Solve issue with kinetic energy 
 - Add units to the dimensionless simulation
 
 The starting point of the code is the basic code found here: 
