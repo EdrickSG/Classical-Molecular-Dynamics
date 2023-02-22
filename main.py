@@ -18,9 +18,11 @@ for step in tqdm(range(sim.steps)):
     sim.kinetic_energies[step+1] = sim.compute_ke(step+1)
 
 #Saving Results
+logging.info("Saving Results")
 sim.xyz_output()
 np.save('Results/test_velocities', sim.velocities)
 np.save('Results/test_positions',sim.positions)
 np.save('Results/test_KE',sim.kinetic_energies)
 np.save('Results/test_PE',sim.potential_energies)
 np.save('Results/test_second_pot',sim.second_potential)
+logging.info("The simulation ended successfully!")

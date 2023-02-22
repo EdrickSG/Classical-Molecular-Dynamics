@@ -109,10 +109,6 @@ class MDSimulation:
                 r[i]=r[i] + self.box_len
         r_mag = np.linalg.norm(r)
         return 4*((1/r_mag)**12- (1/r_mag)**6)
-<<<<<<< HEAD
-=======
-
->>>>>>> b92cff1 (Solve issue of energy conservation)
     
     def compute_pe(self, step):
         total_pe=0
