@@ -54,7 +54,7 @@ class MDSimulation:
         scale = (self.box_len-2*shift)/side_copies
         all_points = np.unique(all_points, axis=0)
         all_points = all_points*scale+np.array([shift,shift,shift])
-        return all_points 
+        return all_points
 
     def velocity_init(self):
         self.velocities = np.zeros((self.steps+1,self.num_particles,self.dim))
