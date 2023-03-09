@@ -127,10 +127,8 @@ class MDSimulation:
     
     def xyz_output(self):
         file = open("Results/test.xyz", "w")
-        file.write("\n")
-        file.write(f"{len(self.positions[0])}\n")
-        file.write(f"\n")
         for step in range(len(self.positions)):
-            for index, all_pos in enumerate(self.positions[step]):
-                file.write(f"atom{index} {all_pos[0]} {all_pos[1]} {all_pos[2]}\n")
+            file.write(f"{len(self.positions[0])}\n")
             file.write("\n")
+            for index, all_pos in enumerate(self.positions[step]):
+                file.write(f"Ar {all_pos[0]} {all_pos[1]} {all_pos[2]}\n")
