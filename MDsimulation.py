@@ -2,10 +2,11 @@ import numpy as np
 import copy as cp
 import itertools as it
 import logging
+from Thermostat import *
 
 class MDSimulation:
 
-    def __init__(self, steps = 5000, dt = 0.004 ,box_len = 10):
+    def __init__(self, steps = 5000, dt = 0.004 ,box_len = 10, thermostat = False, kT = 1, gamma = 0.01):
         self.steps = steps
         self.dt = dt
         self.box_len = box_len
@@ -17,6 +18,7 @@ class MDSimulation:
         self.positions = None #np.zeros((self.steps+1,self.num_particles,self.dim))
         self.velocities = None #np.zeros((self.steps+1,self.num_particles,self.dim))
         logging.info(f'Simulation created with {steps} steps of length dt = {dt} and box length equals to {box_len}')
+        self.thermostat = Thermostat(self.dt, active = thermostat, kT = kT,  gamma = gamma)
         
     def position_init(self, lattice_structure = "FCC" , side_copies = 2 ):
         if lattice_structure == "BCC":
@@ -56,9 +58,9 @@ class MDSimulation:
         all_points = all_points*scale+np.array([shift,shift,shift])
         return all_points
 
-    def velocity_init(self):
+    def velocity_init(self, kT):
         self.velocities = np.zeros((self.steps+1,self.num_particles,self.dim))
-        self.velocities[0] = np.random.normal(loc=0,size=(self.num_particles, self.dim))
+        self.velocities[0] = np.random.normal(loc=0,scale=np.sqrt(kT) ,size=(self.num_particles ,self.dim))
         self.kinetic_energies = np.zeros((self.steps+1))
         self.kinetic_energies[0] = self.compute_ke(0)
 
@@ -89,6 +91,7 @@ class MDSimulation:
         force = self.compute_forces(step)
         self.second_potential[step+1] = self.compute_pe(step)
         self.positions[step+1] = self.positions[step] + self.velocities[step]*self.dt +0.5*force*(self.dt**2)
+        self.positions[step+1] += self.thermostat.positions(self.velocities[step])   #Adding the contribution of the thermostat
         #Boundary conditions
         for k in range(self.num_particles):
             for i in range(self.dim):
@@ -98,6 +101,7 @@ class MDSimulation:
                     self.positions[step+1][k][i] = self.positions[step+1][k][i] + self.box_len
         force_next = self.compute_forces(step+1)
         self.velocities[step+1] = self.velocities[step] + 0.5*(force+force_next)*(self.dt)
+        self.velocities[step+1] += self.thermostat.velocities(force)   #Adding the contribution of the thermostat
 
     def pe_pair(self, p1, p2, step):
         r = self.positions[step][p1] - self.positions[step][p2]
