@@ -8,9 +8,9 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
                     level=logging.INFO) #INFO/DEBUGGING/etc.
 
 #Initializing Simulation
-sim = MDSimulation(steps = 1000, dt = 0.004, box_len = 12, thermostat = False, kT = 3, gamma = .1)
-sim.position_init(lattice_structure = "BCC", side_copies = 4)
-sim.velocity_init(kT = 1)
+sim = MDSimulation(steps = 100, dt = 0.004, box_len = 12, thermostat = True, kT = .1, gamma = .1)
+sim.position_init(lattice_structure = "FCC", side_copies = 3)
+sim.velocity_init(kT = .1)
 sim.linked_cell_init(cell_len = 3)
 
 #Main Loop
@@ -21,11 +21,12 @@ for step in tqdm(range(sim.steps)):
 
 #Saving Results
 logging.info("Saving Results")
-sim.xyz_output()
+sim.xyz_output(sim.positions, "positions.xyz")
+sim.xyz_output(sim.velocities, "velocities.xyz")
 #np.save('Results/kT3_velocities', sim.velocities)
-np.save('Results/test_pos.npy',sim.positions)
+#np.save('Results/test_pos.npy',sim.positions)
 #np.save('Results/linkcell_test_link.npy', sim.linked_cell.link)
 #np.save('Results/linkcell_test_header.npy', sim.linked_cell.header)
-np.save('Results/test_kin.npy',sim.kinetic_energies)
-np.save('Results/test_pot.npy',sim.potential_energies)
+#np.save('Results/test_kin.npy',sim.kinetic_energies)
+#np.save('Results/test_pot.npy',sim.potential_energies)
 logging.info("The simulation ended successfully!")

@@ -30,8 +30,8 @@ class MDSimulation:
             unit_cell= np.array([[0, 0, 0],[0.5, 0.5, 0],[0, 0.5, 0.5],[0.5, 0, 0.5]])
             initial_positions = self.generate_initial_positions(unit_cell,side_copies)
             self.num_particles = len(initial_positions)
-            if self.num_particles != (side_copies+1)**3+side_copies**2*(side_copies+1)*3:
-                logging.error(f'The number of atoms is not consistent! :(')
+            #if self.num_particles != (side_copies+1)**3+side_copies**2*(side_copies+1)*3: # ToDo: Compute again the number of atoms
+                #logging.error(f'The number of atoms is not consistent! :(')
         elif lattice_structure == "BCC":
             self.dim = 3
             unit_cell = np.array([[0, 0, 0], [.5,.5,.5]])
@@ -168,10 +168,11 @@ class MDSimulation:
         velocity_squared = np.array([np.dot(v,v) for v in self.velocities[step]])
         return 0.5*np.sum(velocity_squared)
     
-    def xyz_output(self):
-        file = open("Results/test.xyz", "w")
-        for step in range(len(self.positions)):
-            file.write(f"{len(self.positions[0])}\n")
+    def xyz_output(self, particle_property, file_name): #self.positions or self.velocities
+        file_complete_name = "Results/"+file_name
+        file = open(file_complete_name, "w")
+        for step in range(len(particle_property)):
+            file.write(f"{len(particle_property[0])}\n")
             file.write("\n")
-            for index, all_pos in enumerate(self.positions[step]):
+            for index, all_pos in enumerate(particle_property[step]):
                 file.write(f"Ar {all_pos[0]} {all_pos[1]} {all_pos[2]}\n")
