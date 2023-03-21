@@ -5,13 +5,13 @@ import time
 
 #Logging for Debugging and Terminal Messages
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
-                    level=logging.INFO) #INFO/DEBUGGING/etc.
+                    level=logging.DEBUG) #INFO/DEBUGGING/etc.
 
 #Initializing Simulation
-sim = MDSimulation(steps = 1000, dt = 0.004, box_len = 12, thermostat = True, kT = 3, gamma = .1)
+sim = MDSimulation(steps = 1000, dt = 0.004, lattice_constant= 1.5, thermostat = True, kT = .1, gamma = .1)
 sim.position_init(lattice_structure = "FCC", side_copies = 4)
 sim.velocity_init(kT = 1)
-sim.linked_cell_init(cell_len = 3)
+sim.linked_cell_init(cell_num = 4)
 
 #Main Loop
 for step in tqdm(range(sim.steps)):

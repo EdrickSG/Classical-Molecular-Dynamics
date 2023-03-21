@@ -8,13 +8,14 @@ from LinkedCell import *
 
 class MDSimulation:
 
-    def __init__(self, m = 1., sigma=1., epsilon=1., steps = 5000, dt = 0.004 ,box_len = 10, r_cutoff= 2.5 ,thermostat = False, kT = 1, gamma = 0.01):
+    def __init__(self, m = 1., sigma=1., epsilon=1., steps = 5000, dt = 0.004 ,lattice_constant = 1.5, r_cutoff= 999 ,thermostat = False, kT = 1, gamma = 0.01):
         self.m = m
         self.sigma = sigma
         self.epsilon = epsilon
         self.steps = steps
         self.dt = dt
-        self.box_len = box_len
+        self.lattice_constant = lattice_constant
+        self.box_len = None
         self.r_cutoff= r_cutoff
         self.kinetic_energies = np.zeros((self.steps+1))
         self.potential_energies = np.zeros((self.steps+1))
@@ -22,10 +23,9 @@ class MDSimulation:
         self.num_particles = None #Once the num_particles is determined, we set the following arrays
         self.positions = None #np.zeros((self.steps+1,self.num_particles,self.dim))
         self.velocities = None #np.zeros((self.steps+1,self.num_particles,self.dim))
-        logging.info(f'Simulation created with {self.steps} steps of length dt = {self.dt} and box length equal to {self.box_len}')
+        logging.info(f'Simulation created with {self.steps} steps of length dt = {self.dt} and lattice constant equal to {self.lattice_constant}')
         self.thermostat = Thermostat(self.dt, active = thermostat, kT = kT,  gamma = gamma, m = self.m)
-        self.linked_cell = None
-        
+        self.linked_cell = None     
         
     def position_init(self, lattice_structure = "FCC" , side_copies = 2 ):
         if lattice_structure == "FCC":
@@ -43,19 +43,15 @@ class MDSimulation:
         #Initializing Positions and Setting Initial Position and Potential Energy
         self.positions = np.zeros((self.steps+1,self.num_particles,self.dim))
         self.positions[0] = initial_positions
+        self.box_len = side_copies*self.lattice_constant #initial_positions.max()
         self.potential_energies[0] = self.compute_pe(0)
-        logging.info(f'{self.num_particles} particles were placed on {lattice_structure} lattice structure ({side_copies} unit cells per side)')
+        logging.info(f'{self.num_particles} particles were placed on {lattice_structure} lattice structure ({side_copies} unit cells per side) in a box of length {self.box_len}')
     
     def generate_initial_positions(self, unit_cell, side_copies):
         displacements = np.array([np.array([x,y,z]) for x in range(side_copies) for y in range(side_copies) for z in range(side_copies)  ])
-        all_points = unit_cell
-        for i in range(len(displacements)):
-            all_points = np.concatenate((all_points, unit_cell+displacements[i]))
-        shift = 0 # self.box_len/(((side_copies*2+2)*2))
-        scale = (self.box_len-2*shift)/side_copies
-        all_points = np.unique(all_points, axis=0)  #To delete
-        all_points = all_points*scale+np.array([shift,shift,shift])
-        return all_points
+        initial_positions = np.array([unit_cell+displacement for displacement in displacements])
+        initial_positions = initial_positions.reshape(len(unit_cell)*len(displacements), self.dim)  # Hardcoded dimension
+        return initial_positions*self.lattice_constant
 
     def velocity_init(self, kT):
         self.velocities = np.zeros((self.steps+1,self.num_particles,self.dim))
@@ -65,11 +61,11 @@ class MDSimulation:
         self.kinetic_energies[0] = self.compute_ke(0)
         logging.info(f'Temperature for initial velocities was kT={kT}')
     
-    def linked_cell_init(self, cell_len):
-        if cell_len<self.r_cutoff:
-            logging.error(f"The cell length of the linked cell method ({cell_len}) should larger than the cut-off radio ({self.r_cutoff}). See main.py")
-            exit()
-        self.linked_cell = LinkedCell(cell_len, self.box_len, self.num_particles)
+    def linked_cell_init(self, cell_num):
+        #if cell_len<self.r_cutoff:
+            #logging.WARNING(f"The cell length of the linked cell method ({cell_len}) should larger than the cut-off radio ({self.r_cutoff}). See main.py")
+            #exit()
+        self.linked_cell = LinkedCell(cell_num, self.box_len, self.num_particles)
         self.linked_cell.update_lists(self.positions[0])
 
     def lj_force_pair(self,p1, p2, step):
@@ -178,3 +174,4 @@ class MDSimulation:
             file.write("\n")
             for index, all_pos in enumerate(particle_property[step]):
                 file.write(f"Ar {all_pos[0]} {all_pos[1]} {all_pos[2]}\n")
+

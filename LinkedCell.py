@@ -3,19 +3,15 @@ import logging
 
 class LinkedCell:
 
-    def __init__(self, cell_len, box_len, num_particles):
-        self.cell_len = cell_len
-        if not (box_len/cell_len).is_integer():
-            logging.error(f"The total box length of the simulation ({box_len}) should be a multiple of the cell length ({cell_len}). See main.py")
-            exit()
-        self.side_cells = int(box_len/cell_len)   # Number of cells per side   #ToDo: This should be an integer message
+    def __init__(self, cell_num, box_len, num_particles):
+        self.side_cells = cell_num   # Number of cells per side   #ToDo: This should be an integer message        
+        self.cell_len = box_len/cell_num
         self.relative_size = self.side_cells/box_len
         self.num_particles = num_particles
         self.header = np.ones((self.side_cells, self.side_cells, self.side_cells ), dtype=int)*-1  # List with higher particle index in cell [X,Y,Z] (See book of J. M. Thijssen p. 204)
         self.link = np.empty(self.num_particles)
         self.force = np.zeros((self.num_particles, 3))
         logging.info(f"Linked-cell created in the box of length {box_len} with {self.side_cells} cells per side with length {self.cell_len}")
-
 
     def update_lists(self, positions):  #positions[step]!!!!!
         self.header = np.ones((self.side_cells, self.side_cells, self.side_cells ), dtype=int)*-1
@@ -28,12 +24,10 @@ class LinkedCell:
             self.header[IX,IY,IZ] = i
 
     def interacting_particles(self ,IX, IY, IZ):
-        logging.debug("Inside interacting particles!")
         central_cell_particles = np.array([], dtype=int)
         particle_index = self.header[IX, IY, IZ]
         # Interacting particles in the central cell
         while (particle_index >= 0):
-            logging.debug("Inside while particle index {particle_index}")
             central_cell_particles = np.append(central_cell_particles,particle_index)
             particle_index = self.link[int(particle_index)]
         # Interacting particles in half the neighbors
@@ -56,7 +50,3 @@ class LinkedCell:
         for i in range(num_neighbors):
             cell_neighbors[i] = (central_cell_index+displacements[i])% self.side_cells
         return cell_neighbors
-        
-
-        
-
