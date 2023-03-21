@@ -3,12 +3,12 @@ import logging
 
 class Thermostat:
 
-    def __init__(self, dt ,active = False, kT = 1, gamma = 0.01):
+    def __init__(self, dt ,active = False, kT = 1, gamma = 0.01, m = 1 ):
         self.dt = dt
         self.kT = kT
         self.gamma = gamma
         self.active = active
-        self.sigma = np.sqrt(2* self.kT*self.gamma)
+        self.sigma = np.sqrt(2* self.kT*self.gamma/m)
         self.eta = None  # Gaussian variables
         self.xi = None
         self.An = None  #An factor in WEC paper minus force contribution

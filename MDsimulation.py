@@ -8,11 +8,14 @@ from LinkedCell import *
 
 class MDSimulation:
 
-    def __init__(self, steps = 5000, dt = 0.004 ,box_len = 10, r_cutoff= 2.5 ,thermostat = False, kT = 1, gamma = 0.01):
+    def __init__(self, m = 1., sigma=1., epsilon=1., steps = 5000, dt = 0.004 ,box_len = 10, r_cutoff= 2.5 ,thermostat = False, kT = 1, gamma = 0.01):
+        self.m = m
+        self.sigma = sigma
+        self.epsilon = epsilon
         self.steps = steps
         self.dt = dt
         self.box_len = box_len
-        self.r_cutoff= 2.5
+        self.r_cutoff= r_cutoff
         self.kinetic_energies = np.zeros((self.steps+1))
         self.potential_energies = np.zeros((self.steps+1))
         self.dim = None         #Currently all the simulations are in 3D...
@@ -20,18 +23,16 @@ class MDSimulation:
         self.positions = None #np.zeros((self.steps+1,self.num_particles,self.dim))
         self.velocities = None #np.zeros((self.steps+1,self.num_particles,self.dim))
         logging.info(f'Simulation created with {self.steps} steps of length dt = {self.dt} and box length equal to {self.box_len}')
-        self.thermostat = Thermostat(self.dt, active = thermostat, kT = kT,  gamma = gamma)
+        self.thermostat = Thermostat(self.dt, active = thermostat, kT = kT,  gamma = gamma, m = self.m)
         self.linked_cell = None
         
+        
     def position_init(self, lattice_structure = "FCC" , side_copies = 2 ):
-
         if lattice_structure == "FCC":
             self.dim = 3
             unit_cell= np.array([[0, 0, 0],[0.5, 0.5, 0],[0, 0.5, 0.5],[0.5, 0, 0.5]])
             initial_positions = self.generate_initial_positions(unit_cell,side_copies)
             self.num_particles = len(initial_positions)
-            #if self.num_particles != (side_copies+1)**3+side_copies**2*(side_copies+1)*3: # ToDo: Compute again the number of atoms
-                #logging.error(f'The number of atoms is not consistent! :(')
         elif lattice_structure == "BCC":
             self.dim = 3
             unit_cell = np.array([[0, 0, 0], [.5,.5,.5]])
@@ -58,7 +59,8 @@ class MDSimulation:
 
     def velocity_init(self, kT):
         self.velocities = np.zeros((self.steps+1,self.num_particles,self.dim))
-        self.velocities[0] = np.random.normal(loc=0,scale=np.sqrt(kT) ,size=(self.num_particles ,self.dim))
+        factor = np.sqrt(kT/self.m)
+        self.velocities[0] = np.random.normal(loc=0, scale=factor, size=(self.num_particles, self.dim))
         self.kinetic_energies = np.zeros((self.steps+1))
         self.kinetic_energies[0] = self.compute_ke(0)
         logging.info(f'Temperature for initial velocities was kT={kT}')
@@ -80,7 +82,7 @@ class MDSimulation:
                 r[i]=r[i] + self.box_len
         r_mag = np.linalg.norm(r)
         if r_mag<= self.r_cutoff:
-            f_mag = 24 * (2*((1/r_mag)**14) - (1/r_mag)**8)
+            f_mag = 24*(self.epsilon/self.sigma**2) * (2*((self.sigma/r_mag)**14) - (self.sigma/r_mag)**8)
         else:
             f_mag = 0
         return f_mag * r
@@ -97,10 +99,10 @@ class MDSimulation:
         return np.array([self.lj_force(p,step) for p in range(self.num_particles)])
     
     def simple_lj_force_pair(self,p1, p2, step):  #The only difference with lj_force_pair is that we do not use the minimum image convention
-        r = self.positions[step][int(p1)] - self.positions[step][int(p2)] # Todo: Make p1 and p2 integer from the beginnign
+        r = self.positions[step][int(p1)] - self.positions[step][int(p2)] # Todo: Make p1 and p2 integer from the beginning
         r_mag = np.linalg.norm(r)
         if r_mag <= self.r_cutoff:
-            f_mag = 24 * (2*((1/r_mag)**14) - (1/r_mag)**8)
+            f_mag = 24*(self.epsilon/self.sigma**2) * (2*((self.sigma/r_mag)**14) - (self.sigma/r_mag)**8)
         else:
             f_mag = 0
         return f_mag * r
@@ -131,7 +133,7 @@ class MDSimulation:
     def velocity_verlet_step(self, step):
         #force = self.compute_forces(step)
         force = self.compute_forces_linkedcell(step)
-        self.positions[step+1] = self.positions[step] + self.velocities[step]*self.dt +0.5*force*(self.dt**2)
+        self.positions[step+1] = self.positions[step] + self.velocities[step]*self.dt +0.5*force*(self.dt**2)/self.m
         self.positions[step+1] += self.thermostat.positions(self.velocities[step])   #Adding the contribution of the thermostat
         #Boundary conditions
         for k in range(self.num_particles):
@@ -142,7 +144,7 @@ class MDSimulation:
                     self.positions[step+1][k][i] = self.positions[step+1][k][i] + self.box_len
         #force_next = self.compute_forces(step+1)
         force_next = self.compute_forces_linkedcell(step+1)
-        self.velocities[step+1] = self.velocities[step] + 0.5*(force+force_next)*(self.dt)
+        self.velocities[step+1] = self.velocities[step] + 0.5*(force+force_next)*(self.dt)/self.m
         self.velocities[step+1] += self.thermostat.velocities(force)   #Adding the contribution of the thermostat
         self.linked_cell.update_lists(self.positions[step+1])
 
@@ -155,7 +157,7 @@ class MDSimulation:
             if r[i]<-self.box_len/2:
                 r[i]=r[i] + self.box_len
         r_mag = np.linalg.norm(r)
-        return 4*((1/r_mag)**12- (1/r_mag)**6)
+        return 4*self.epsilon*((self.sigma/r_mag)**12- (self.sigma/r_mag)**6)
     
     def compute_pe(self, step):
         total_pe=0
