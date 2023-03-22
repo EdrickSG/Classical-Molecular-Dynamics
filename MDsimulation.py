@@ -50,7 +50,7 @@ class MDSimulation:
     def generate_initial_positions(self, unit_cell, side_copies):
         displacements = np.array([np.array([x,y,z]) for x in range(side_copies) for y in range(side_copies) for z in range(side_copies)  ])
         initial_positions = np.array([unit_cell+displacement for displacement in displacements])
-        initial_positions = initial_positions.reshape(len(unit_cell)*len(displacements), self.dim)  # Hardcoded dimension
+        initial_positions = initial_positions.reshape(len(unit_cell)*len(displacements), self.dim)  
         return initial_positions*self.lattice_constant
 
     def velocity_init(self, kT):
@@ -62,9 +62,6 @@ class MDSimulation:
         logging.info(f'Temperature for initial velocities was kT={kT}')
     
     def linked_cell_init(self, cell_num):
-        #if cell_len<self.r_cutoff:
-            #logging.WARNING(f"The cell length of the linked cell method ({cell_len}) should larger than the cut-off radio ({self.r_cutoff}). See main.py")
-            #exit()
         self.linked_cell = LinkedCell(cell_num, self.box_len, self.num_particles)
         self.linked_cell.update_lists(self.positions[0])
 
@@ -127,8 +124,8 @@ class MDSimulation:
         return force
     
     def velocity_verlet_step(self, step):
-        #force = self.compute_forces(step)
-        force = self.compute_forces_linkedcell(step)
+        force = self.compute_forces(step)
+        #force = self.compute_forces_linkedcell(step)
         self.positions[step+1] = self.positions[step] + self.velocities[step]*self.dt +0.5*force*(self.dt**2)/self.m
         self.positions[step+1] += self.thermostat.positions(self.velocities[step])   #Adding the contribution of the thermostat
         #Boundary conditions
@@ -138,8 +135,8 @@ class MDSimulation:
                     self.positions[step+1][k][i]= self.positions[step+1][k][i] - self.box_len
                 if self.positions[step+1][k][i]<0:
                     self.positions[step+1][k][i] = self.positions[step+1][k][i] + self.box_len
-        #force_next = self.compute_forces(step+1)
-        force_next = self.compute_forces_linkedcell(step+1)
+        force_next = self.compute_forces(step+1)
+        #force_next = self.compute_forces_linkedcell(step+1)
         self.velocities[step+1] = self.velocities[step] + 0.5*(force+force_next)*(self.dt)/self.m
         self.velocities[step+1] += self.thermostat.velocities(force)   #Adding the contribution of the thermostat
         self.linked_cell.update_lists(self.positions[step+1])

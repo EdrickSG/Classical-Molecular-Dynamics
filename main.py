@@ -8,9 +8,9 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
                     level=logging.DEBUG) #INFO/DEBUGGING/etc.
 
 #Initializing Simulation
-sim = MDSimulation(steps = 1000, dt = 0.004, lattice_constant= 1.5, thermostat = True, kT = .1, gamma = .1)
+sim = MDSimulation(steps = 10000, dt = 0.004, lattice_constant= 1.5, thermostat = True, kT = .1, gamma = .1)
 sim.position_init(lattice_structure = "FCC", side_copies = 4)
-sim.velocity_init(kT = 1)
+sim.velocity_init(kT = .1)
 sim.linked_cell_init(cell_num = 4)
 
 #Main Loop
@@ -24,9 +24,9 @@ logging.info("Saving Results")
 sim.xyz_output(sim.positions, "positions.xyz")
 sim.xyz_output(sim.velocities, "velocities.xyz")
 #np.save('Results/kT3_velocities', sim.velocities)
-np.save('Results/test_pos.npy',sim.positions)
+np.save('Results/pos_solid.npy',sim.positions)
 #np.save('Results/linkcell_test_link.npy', sim.linked_cell.link)
 #np.save('Results/linkcell_test_header.npy', sim.linked_cell.header)
-np.save('Results/test_kin.npy',sim.kinetic_energies)
-np.save('Results/test_pot.npy',sim.potential_energies)
+np.save('Results/kin_solid.npy',sim.kinetic_energies)
+np.save('Results/pot_solid.npy',sim.potential_energies)
 logging.info("The simulation ended successfully!")
