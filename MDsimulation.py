@@ -18,13 +18,12 @@ class MDSimulation:
         self.r_cutoff= r_cutoff
         self.current_positions = None
         self.current_velocities = None
+        self.current_potential = None
         self.kinetic_energies = np.zeros((self.steps+1))
         self.potential_energies = np.zeros((self.steps+1))
         self.current_force = None
         self.dim = None         #Currently all the simulations are in 3D...
         self.num_particles = None #Once the num_particles is determined, we set the following arrays
-        self.positions = None #np.zeros((self.steps+1,self.num_particles,self.dim))
-        self.velocities = None #np.zeros((self.steps+1,self.num_particles,self.dim))
         logging.info(f'Simulation created with {self.steps} steps of length dt = {self.dt} and cut-off radius equal to {r_cutoff}.')
         self.thermostat = Thermostat(self.dt, active = thermostat, kT = kT,  gamma = gamma, m = self.m)
         self.linked_cell = None
@@ -32,7 +31,7 @@ class MDSimulation:
         if linked_cell_method:
             self.force_function = self.compute_forces_linkedcell
         else:
-            self.force_function = self.compute_forces_brutforce
+            self.force_function = self.compute_forces_n2
             logging.info(f"The linked-cell method is not active.")
 
         
@@ -50,8 +49,6 @@ class MDSimulation:
         else:
                 logging.error(f'The argument lattice_structure can be either FCC or BCC!')
         #Initializing Positions and Setting Initial Position and Potential Energy
-        self.positions = np.zeros((self.steps+1,self.num_particles,self.dim))
-        self.positions[0] = initial_positions
         self.current_positions = initial_positions
         self.box_len = side_copies*lattice_constant #initial_positions.max()
         self.potential_energies[0] = self.compute_pe()
@@ -65,21 +62,23 @@ class MDSimulation:
         initial_positions = initial_positions.reshape(len(unit_cell)*len(displacements), self.dim)  
         return initial_positions*lattice_constant
 
-    def velocity_init(self, kT):
-        self.velocities = np.zeros((self.steps+1,self.num_particles,self.dim))
-        factor = np.sqrt(kT/self.m)
-        vels = np.random.normal(loc=0, scale=factor, size=(self.num_particles, self.dim)) # For storing problems
-        self.velocities[0] = vels
-        self.current_velocities = vels
-        self.kinetic_energies = np.zeros((self.steps+1))
-        self.kinetic_energies[0] = self.compute_ke()
-        logging.info(f'The temperature for initial velocities was kT={kT}.')
+    def velocity_init(self, kT = False, initial_velocities = []):
+        if len(initial_velocities):
+            self.current_velocities = initial_velocities
+            self.kinetic_energies[0] = self.compute_ke()
+            logging.info(f'The initial velocities were set from data.')
+        else:
+            factor = np.sqrt(kT/self.m)
+            self.current_velocities = np.random.normal(loc=0, scale=factor, size=(self.num_particles, self.dim))
+            self.kinetic_energies = np.zeros((self.steps+1))
+            self.kinetic_energies[0] = self.compute_ke()
+            logging.info(f'The temperature for initial velocities was kT={kT}.')
     
     def linked_cell_init(self):
         self.linked_cell = LinkedCell(self.r_cutoff, self.box_len, self.num_particles)
         self.linked_cell.update_lists(self.current_positions)
 
-    def lj_force_pair(self,p1, p2):
+    def lj_force_potential_pair(self,p1, p2):
         r = self.current_positions[p1] - self.current_positions[p2]
         #Minimum Image Convention
         for i in range(self.dim):
@@ -90,9 +89,11 @@ class MDSimulation:
         r_mag = np.linalg.norm(r)
         if r_mag<= self.r_cutoff:
             f_mag = 24*(self.epsilon/self.sigma**2) * (2*((self.sigma/r_mag)**14) - (self.sigma/r_mag)**8)
+            potential = 4*self.epsilon*((self.sigma/r_mag)**12-(self.sigma/r_mag)**6)
         else:
             f_mag = 0
-        return f_mag * r
+            potential = 0
+        return f_mag * r, potential
 
     def lj_force(self, p):
         force = np.zeros(shape=self.dim)
@@ -105,6 +106,18 @@ class MDSimulation:
     def compute_forces_brutforce(self):
         return np.array([self.lj_force(p) for p in range(self.num_particles)])
     
+    def compute_forces_n2(self):
+        pe = 0
+        force = np.zeros((self.num_particles,self.dim))
+        for i in range(self.num_particles):
+            for j in range(i+1,self.num_particles):
+                pair_force, pair_potential = self.lj_force_potential_pair(i,j)
+                force[i] += pair_force
+                force[j] -= pair_force
+                pe += pair_potential
+        self.current_potential = pe
+        return force
+    
     def simple_lj_force_pair(self,p1, p2):  #The only difference with lj_force_pair is that we do not use the minimum image convention
         r = self.current_positions[int(p1)] - self.current_positions[int(p2)] # Todo: Make p1 and p2 integer from the beginning
         r_mag = np.linalg.norm(r)
@@ -116,6 +129,7 @@ class MDSimulation:
     
     def compute_forces_linkedcell(self):
         force = np.zeros((self.num_particles,self.dim))
+        pe = 0
         side_cells = self.linked_cell.side_cell_num
         for IX in range(side_cells):
             for IY in range(side_cells):
@@ -125,14 +139,17 @@ class MDSimulation:
                     for p1 in range(num_particles_central):
                         #Interaction between particles in central cell
                         for p2 in range(p1+1,num_particles_central):
-                            pair_force = self.simple_lj_force_pair(central_cell_particles[p1], central_cell_particles[p2])  # I may use lj_force_pair...
+                            pair_force, pair_potential = self.lj_force_potential_pair(central_cell_particles[p1], central_cell_particles[p2])  # I may use lj_force_pair...
                             force[central_cell_particles[p1]] += pair_force
                             force[central_cell_particles[p2]] -= pair_force
+                            pe += pair_potential
                         #Interaction between particles in central cell and neighbors
                         for pn in neighbor_cells_particles:
-                            pair_force = self.lj_force_pair(central_cell_particles[p1], pn)
+                            pair_force, pair_potential = self.lj_force_potential_pair(central_cell_particles[p1], pn)
                             force[central_cell_particles[p1]] += pair_force
                             force[pn] -= pair_force
+                            pe += pair_potential
+        self.current_potential = pe
         return force
     
     def velocity_verlet_step(self):
