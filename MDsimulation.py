@@ -34,7 +34,6 @@ class MDSimulation:
             self.force_function = self.compute_forces_n2
             logging.info(f"The linked-cell method is not active.")
 
-        
     def position_init(self, lattice_structure = "FCC" , lattice_constant = 1.5 ,side_copies = 2 ):
         if lattice_structure == "FCC":
             self.dim = 3
@@ -50,8 +49,7 @@ class MDSimulation:
                 logging.error(f'The argument lattice_structure can be either FCC or BCC!')
         #Initializing Positions and Setting Initial Position and Potential Energy
         self.current_positions = initial_positions
-        self.box_len = side_copies*lattice_constant #initial_positions.max()
-        self.potential_energies[0] = self.compute_pe()
+        self.box_len = side_copies*lattice_constant 
         logging.info(f'{self.num_particles} particles were placed on a {lattice_structure} lattice with lattice constant {lattice_constant} ({side_copies} unit cells per side) in a box of length {self.box_len}.')
         if self.linked_cell_method_flag:
             self.linked_cell_init()
@@ -94,17 +92,6 @@ class MDSimulation:
             f_mag = 0
             potential = 0
         return f_mag * r, potential
-
-    def lj_force(self, p):
-        force = np.zeros(shape=self.dim)
-        for part in range(self.num_particles):
-            if(part == p):
-                continue
-            force += self.lj_force_pair(p, part)
-        return force
-    
-    def compute_forces_brutforce(self):
-        return np.array([self.lj_force(p) for p in range(self.num_particles)])
     
     def compute_forces_n2(self):
         pe = 0
@@ -118,14 +105,16 @@ class MDSimulation:
         self.current_potential = pe
         return force
     
-    def simple_lj_force_pair(self,p1, p2):  #The only difference with lj_force_pair is that we do not use the minimum image convention
+    def simple_lj_force_potential_pair(self,p1, p2):  #The only difference with lj_force_pair is that we do not use the minimum image convention
         r = self.current_positions[int(p1)] - self.current_positions[int(p2)] # Todo: Make p1 and p2 integer from the beginning
         r_mag = np.linalg.norm(r)
         if r_mag <= self.r_cutoff:
             f_mag = 24*(self.epsilon/self.sigma**2) * (2*((self.sigma/r_mag)**14) - (self.sigma/r_mag)**8)
+            potential = 4*self.epsilon*((self.sigma/r_mag)**12-(self.sigma/r_mag)**6)
         else:
             f_mag = 0
-        return f_mag * r
+            potential = 0
+        return f_mag * r, potential
     
     def compute_forces_linkedcell(self):
         force = np.zeros((self.num_particles,self.dim))
@@ -169,28 +158,6 @@ class MDSimulation:
         self.current_force = force_next
         if self.linked_cell_method_flag:
             self.linked_cell.update_lists(self.current_positions)
-
-    def pe_pair(self, p1, p2):
-        r = self.current_positions[p1] - self.current_positions[p2]
-        #Minimum image convention
-        for i in range(self.dim):
-            if r[i]>self.box_len/2:
-                r[i]=r[i] - self.box_len
-            if r[i]<-self.box_len/2:
-                r[i]=r[i] + self.box_len
-        r_mag = np.linalg.norm(r)
-        if r_mag<= self.r_cutoff:
-            potential = 4*self.epsilon*((self.sigma/r_mag)**12-(self.sigma/r_mag)**6)
-        else:
-            potential = 0
-        return potential
-    
-    def compute_pe(self):
-        total_pe=0
-        for i in range(self.num_particles):
-            for j in range(i+1,self.num_particles):
-                total_pe+=self.pe_pair(i,j)
-        return total_pe
     
     def compute_ke(self):
         velocity_squared = np.array([np.dot(v,v) for v in self.current_velocities])
