@@ -19,8 +19,6 @@ sim.velocity_init( kT = 1)
 #positions = np.zeros((sim.steps+1,sim.num_particles,sim.dim))
 #positions[0] = sim.current_positions
 
-sim.current_force = sim.force_function()
-sim.potential_energies[0] = sim.current_potential
 #Main Loop
 for step in tqdm(range(sim.steps)):
     sim.velocity_verlet_step()

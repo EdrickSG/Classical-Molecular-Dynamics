@@ -71,6 +71,7 @@ class MDSimulation:
             self.kinetic_energies = np.zeros((self.steps+1))
             self.kinetic_energies[0] = self.compute_ke()
             logging.info(f'The temperature for initial velocities was kT={kT}.')
+        self.current_force = self.force_function()
     
     def linked_cell_init(self):
         self.linked_cell = LinkedCell(self.r_cutoff, self.box_len, self.num_particles)
