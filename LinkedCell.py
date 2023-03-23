@@ -5,8 +5,8 @@ class LinkedCell:
 
     def __init__(self, r_cutoff, box_len, num_particles):
         self.side_cell_num = int(np.floor(box_len/r_cutoff)) # Number of cells per side
-        if self.side_cell_num<=1:
-            logging.error(f"The linked cell method in your system has one or less cells. Reduce the cut-off radius or increase the number of side copies.")
+        if self.side_cell_num<=2:
+            logging.error(f"The linked cell method in your system has two or less cells per side. They should be al least three. Reduce the cut-off radius or increase the number of side copies.")
             exit()
         self.cell_len = box_len/self.side_cell_num
         self.relative_size = self.side_cell_num/box_len
