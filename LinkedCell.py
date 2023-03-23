@@ -4,7 +4,10 @@ import logging
 class LinkedCell:
 
     def __init__(self, r_cutoff, box_len, num_particles):
-        self.side_cell_num = int(np.floor(box_len/r_cutoff)) # Number of cells per side 
+        self.side_cell_num = int(np.floor(box_len/r_cutoff)) # Number of cells per side
+        if self.side_cell_num<=1:
+            logging.error(f"The linked cell method in your system has one or less cells. Reduce the cut-off radius or increase the number of side copies.")
+            exit()
         self.cell_len = box_len/self.side_cell_num
         self.relative_size = self.side_cell_num/box_len
         self.num_particles = num_particles
@@ -12,7 +15,7 @@ class LinkedCell:
         self.link = None
         logging.info(f"Linked-cell created in the box of length {box_len} with {self.side_cell_num} cells per side with length {self.cell_len}")
 
-    def update_lists(self, positions):  #positions[step]!!!!!
+    def update_lists(self, positions):  
         self.header = np.ones((self.side_cell_num, self.side_cell_num, self.side_cell_num ), dtype=int)*-1
         self.link = np.empty(self.num_particles)
         for i in range(self.num_particles):
@@ -40,7 +43,7 @@ class LinkedCell:
         return central_cell_particles.astype(int), neighbor_cells_particles.astype(int)
 
 
-    def cell_neighbors(self, IX, IY, IZ):  # Only half of the neighbors
+    def cell_neighbors(self, IX, IY, IZ):  # Only half of the neighbors #Working for side_cells_num>=3 (?)
         num_neighbors = 13
         central_cell_index = np.array([IX,IY,IZ])
         displacements = np.array([[-1,0,0],[-1,0,1],[-1,-1,0],[-1,1,0],[-1,-1,1],[-1,1,1],
