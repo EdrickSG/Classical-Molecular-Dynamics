@@ -16,6 +16,8 @@ class MDSimulation:
         self.dt = dt
         self.box_len = None
         self.r_cutoff= r_cutoff
+        #self.force_correction = 0 #24*(self.epsilon/self.sigma**2) * (2*((self.sigma/r_cutoff)**14) - (self.sigma/r_cutoff)**8)
+        self.potential_correction = 4*self.epsilon*((self.sigma/self.r_cutoff)**12-(self.sigma/self.r_cutoff)**6)
         self.current_positions = None
         self.current_velocities = None
         self.current_potential = None
@@ -23,7 +25,7 @@ class MDSimulation:
         self.potential_energies = np.zeros((self.steps+1))
         self.current_force = None
         self.dim = None         #Currently all the simulations are in 3D...
-        self.num_particles = None #Once the num_particles is determined, we set the following arrays
+        self.num_particles = None 
         logging.info(f'Simulation created with {self.steps} steps of length dt = {self.dt} and cut-off radius equal to {r_cutoff}.')
         self.thermostat = Thermostat(self.dt, active = thermostat, kT = kT,  gamma = gamma, m = self.m)
         self.linked_cell = None
@@ -45,6 +47,11 @@ class MDSimulation:
             unit_cell = np.array([[0, 0, 0], [.5,.5,.5]])
             initial_positions = self.generate_initial_positions(unit_cell,side_copies, lattice_constant)
             self.num_particles = len(initial_positions)  #side_copies**3* 2->(len(unit_cell))
+        elif lattice_structure == "SC":
+            self.dim = 3
+            unit_cell = np.array([[0, 0, 0]])
+            initial_positions = self.generate_initial_positions(unit_cell,side_copies, lattice_constant)
+            self.num_particles = len(initial_positions)
         else:
                 logging.error(f'The argument lattice_structure can be either FCC or BCC!')
         #Initializing Positions and Setting Initial Position and Potential Energy
@@ -88,8 +95,8 @@ class MDSimulation:
                 r[i]=r[i] + self.box_len
         r_mag = np.linalg.norm(r)
         if r_mag<= self.r_cutoff:
-            f_mag = 24*(self.epsilon/self.sigma**2) * (2*((self.sigma/r_mag)**14) - (self.sigma/r_mag)**8)
-            potential = 4*self.epsilon*((self.sigma/r_mag)**12-(self.sigma/r_mag)**6)
+            f_mag = 24*(self.epsilon/self.sigma**2) * (2*((self.sigma/r_mag)**14) - (self.sigma/r_mag)**8)# - self.force_correction
+            potential = 4*self.epsilon*((self.sigma/r_mag)**12-(self.sigma/r_mag)**6) - self.potential_correction #-(r_mag-self.r_cutoff)*self.force_correction
         else:
             f_mag = 0
             potential = 0
@@ -163,14 +170,15 @@ class MDSimulation:
     
     def compute_ke(self):
         velocity_squared = np.array([np.dot(v,v) for v in self.current_velocities])
-        return 0.5*np.sum(velocity_squared)
+        return 0.5*self.m*np.sum(velocity_squared)
     
     def xyz_output(self, particle_property, file_name): #self.positions or self.velocities
         file_complete_name = "Results/"+file_name
         file = open(file_complete_name, "w")
         for step in range(len(particle_property)):
-            file.write(f"{len(particle_property[0])}\n")
-            file.write("\n")
+            #file.write(f"{len(particle_property[0])}\n")
+            #file.write("\n")
             for index, all_pos in enumerate(particle_property[step]):
-                file.write(f"Ar {all_pos[0]} {all_pos[1]} {all_pos[2]}\n")
+                #file.write(f"Ar {all_pos[0]} {all_pos[1]} {all_pos[2]}\n")
+                file.write(f"{all_pos[0]} {all_pos[1]} {all_pos[2]}\n")
 

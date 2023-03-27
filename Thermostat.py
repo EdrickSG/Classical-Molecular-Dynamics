@@ -34,5 +34,3 @@ class Thermostat:
             return - self.dt*self.gamma*self.previous_velocities + np.sqrt(self.dt)*self.sigma*self.xi - self.gamma*(0.5*force*(self.dt**2)+self.An)
         else:
             return 0
-    
-

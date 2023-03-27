@@ -13,7 +13,7 @@ class LinkedCell:
         self.num_particles = num_particles
         self.header = None  # List with higher particle index in cell [X,Y,Z] (See book of J. M. Thijssen p. 204)
         self.link = None
-        logging.info(f"Linked-cell created in the box of length {box_len} with {self.side_cell_num} cells per side with length {self.cell_len}")
+        logging.info(f"Linked-cell created with {self.side_cell_num} cells per side with length {self.cell_len}")
 
     def update_lists(self, positions):  
         self.header = np.ones((self.side_cell_num, self.side_cell_num, self.side_cell_num ), dtype=int)*-1
