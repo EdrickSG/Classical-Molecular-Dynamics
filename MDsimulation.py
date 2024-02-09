@@ -8,7 +8,7 @@ from LinkedCell import *
 
 class MDSimulation:
 
-    def __init__(self, m = 1., sigma=1., epsilon=1., steps = 5000, dt = 0.004 , r_cutoff= 1.5 ,thermostat = False, kT = 1, gamma = 0.01, linked_cell_method = False):
+    def __init__(self, m = 1, sigma=1., epsilon=1., steps = 5000, dt = 0.004 , r_cutoff= 1.5 ,thermostat = False, kT = 1, gamma = 0.01, linked_cell_method = False):
         self.m = m
         self.sigma = sigma
         self.epsilon = epsilon
@@ -53,7 +53,7 @@ class MDSimulation:
             initial_positions = self.generate_initial_positions(unit_cell,side_copies, lattice_constant)
             self.num_particles = len(initial_positions)
         else:
-                logging.error(f'The argument lattice_structure can be either FCC or BCC!')
+                logging.error(f'The argument lattice_structure can be FCC, BCC or SC!')
         #Initializing Positions and Setting Initial Position and Potential Energy
         self.current_positions = initial_positions
         self.box_len = side_copies*lattice_constant 
@@ -70,14 +70,13 @@ class MDSimulation:
     def velocity_init(self, kT = False, initial_velocities = []):
         if len(initial_velocities):
             self.current_velocities = initial_velocities
-            self.kinetic_energies[0] = self.compute_ke()
             logging.info(f'The initial velocities were set from data.')
         else:
             factor = np.sqrt(kT/self.m)
             self.current_velocities = np.random.normal(loc=0, scale=factor, size=(self.num_particles, self.dim))
             self.kinetic_energies = np.zeros((self.steps+1))
-            self.kinetic_energies[0] = self.compute_ke()
             logging.info(f'The temperature for initial velocities was kT={kT}.')
+        self.kinetic_energies[0] = self.compute_ke()
         self.current_force = self.force_function()
         self.potential_energies[0] = self.current_potential
     
@@ -94,7 +93,7 @@ class MDSimulation:
             if r[i]<-self.box_len/2:
                 r[i]=r[i] + self.box_len
         r_mag = np.linalg.norm(r)
-        if r_mag<= self.r_cutoff:
+        if r_mag<= self.r_cutoff*self.sigma:
             f_mag = 24*(self.epsilon/self.sigma**2) * (2*((self.sigma/r_mag)**14) - (self.sigma/r_mag)**8)# - self.force_correction
             potential = 4*self.epsilon*((self.sigma/r_mag)**12-(self.sigma/r_mag)**6) - self.potential_correction #-(r_mag-self.r_cutoff)*self.force_correction
         else:
@@ -181,4 +180,14 @@ class MDSimulation:
             for index, all_pos in enumerate(particle_property[step]):
                 #file.write(f"Ar {all_pos[0]} {all_pos[1]} {all_pos[2]}\n")
                 file.write(f"{all_pos[0]} {all_pos[1]} {all_pos[2]}\n")
+
+    def xyz_output_II(self, particle_property, file_name): #self.positions or self.velocities
+        file_complete_name = "Results/"+file_name
+        file = open(file_complete_name, "w")
+        for step in range(len(particle_property)):
+            file.write(f"{len(particle_property[0])}\n")
+            file.write("\n")
+            for index, all_pos in enumerate(particle_property[step]):
+                file.write(f"Ar {all_pos[0]} {all_pos[1]} {all_pos[2]}\n")
+                #file.write(f"{all_pos[0]} {all_pos[1]} {all_pos[2]}\n")
 
